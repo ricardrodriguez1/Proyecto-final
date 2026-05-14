@@ -1,0 +1,21 @@
+# PHP
+vendor/
+composer.lock
+*.log
+
+# Environment/Config
+.env
+config/db.php
+config/config.local.php
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Node (if applicable)
+node_modules/
+npm-debug.log
