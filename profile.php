@@ -1172,6 +1172,7 @@ include __DIR__ . '/includes/header.php';
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
+                </section>
                 
             <?php else: ?>
                 <!-- ==================== ADMINISTRATOR PANELS ==================== -->
