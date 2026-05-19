@@ -42,6 +42,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
 
     $plan = generateMealPlan($targetCal, $dietType, $allergies, $planType);
+
+    // Save requested plan automatically to user's profile if logged in
+    if (isLoggedIn() && $plan && !empty($plan['recetas'])) {
+        try {
+            $db = getDB();
+            $stmtSave = $db->prepare("INSERT INTO user_plans 
+                (user_id, peso, altura, edad, genero, actividad, objetivo, diet_type, target_calories, protein, carbs, fat, plan_type, breakfast_id, lunch_id, dinner_id, snack_id)
+                VALUES (:uid, :peso, :altura, :edad, :genero, :actividad, :objetivo, :diet_type, :target_calories, :protein, :carbs, :fat, :plan_type, :breakfast_id, :lunch_id, :dinner_id, :snack_id)");
+            
+            $breakfast_id = null;
+            $lunch_id = null;
+            $dinner_id = null;
+            $snack_id = null;
+
+            if ($plan['tipo'] === 'completo') {
+                $breakfast_id = $plan['recetas']['desayuno']['id'] ?? null;
+                $lunch_id = $plan['recetas']['comida']['id'] ?? null;
+                $dinner_id = $plan['recetas']['cena']['id'] ?? null;
+                $snack_id = $plan['recetas']['snack']['id'] ?? null;
+            } else {
+                $breakfast_id = $plan['recetas'][0]['id'] ?? null;
+            }
+
+            $stmtSave->execute([
+                ':uid' => $_SESSION['user_id'],
+                ':peso' => $peso,
+                ':altura' => $altura,
+                ':edad' => $edad,
+                ':genero' => $genero,
+                ':actividad' => $actividad,
+                ':objetivo' => $objetivo,
+                ':diet_type' => $dietType,
+                ':target_calories' => $result['target'],
+                ':protein' => $result['protein'],
+                ':carbs' => $result['carbs'],
+                ':fat' => $result['fat'],
+                ':plan_type' => $planType,
+                ':breakfast_id' => $breakfast_id,
+                ':lunch_id' => $lunch_id,
+                ':dinner_id' => $dinner_id,
+                ':snack_id' => $snack_id
+            ]);
+            
+            setFlash('success', '¡Tu plan ha sido calculado con éxito y guardado automáticamente en tu perfil!');
+        } catch (Exception $e) {
+            // Silently fail or log error so the calculator remains functional
+        }
+    }
 }
 
 $pageTitle = 'Calculadora Nutricional';

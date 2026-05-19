@@ -24,6 +24,11 @@
                 <li><a href="<?= baseUrl() ?>/index.php"><i class="fas fa-home"></i> Inicio</a></li>
                 <li><a href="<?= baseUrl() ?>/recipes/index.php"><i class="fas fa-utensils"></i> Recetas</a></li>
                 <li><a href="<?= baseUrl() ?>/calculator/index.php"><i class="fas fa-calculator"></i> Calculadora</a></li>
+                <li><a href="<?= baseUrl() ?>/challenges.php"><i class="fas fa-trophy"></i> Retos</a></li>
+                <li><a href="<?= baseUrl() ?>/community.php"><i class="fas fa-globe-americas"></i> Comunidad</a></li>
+                <?php if (isLoggedIn()): ?>
+                    <li><a href="<?= baseUrl() ?>/profile.php"><i class="fas fa-user-circle"></i> Mi Perfil</a></li>
+                <?php endif; ?>
                 <?php if (isAdmin()): ?>
                     <li><a href="<?= baseUrl() ?>/admin/index.php"><i class="fas fa-cogs"></i> Admin</a></li>
                 <?php endif; ?>

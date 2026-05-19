@@ -10,6 +10,14 @@ if (!empty($_GET['search'])) $filters['search'] = $_GET['search'];
 
 $recipes = getRecipesByFilters($filters);
 
+$myFavIds = [];
+if (isLoggedIn()) {
+    $db = getDB();
+    $stmtFavs = $db->prepare("SELECT recipe_id FROM favorites WHERE user_id = :uid");
+    $stmtFavs->execute([':uid' => $_SESSION['user_id']]);
+    $myFavIds = $stmtFavs->fetchAll(PDO::FETCH_COLUMN);
+}
+
 $pageTitle = 'Recetas';
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -81,28 +89,37 @@ include __DIR__ . '/../includes/header.php';
                     <div class="recipes-grid">
                         <?php foreach ($recipes as $recipe): ?>
                             <?php $tags = getRecipeTags($recipe['id']); ?>
-                            <a href="detail.php?id=<?= $recipe['id'] ?>" class="recipe-card">
-                                <div class="recipe-card-image">
+                            <div class="recipe-card" style="position:relative;">
+                                <div class="recipe-card-image" style="position:relative; overflow:hidden;">
                                     <img src="<?= sanitize($recipe['image_url']) ?>" alt="<?= sanitize($recipe['title']) ?>" loading="lazy">
                                     <span class="recipe-card-badge"><?= sanitize($recipe['category']) ?></span>
-                                </div>
-                                <div class="recipe-card-body">
-                                    <h3><?= sanitize($recipe['title']) ?></h3>
-                                    <p><?= sanitize($recipe['description']) ?></p>
-                                    <div class="recipe-meta">
-                                        <span><i class="fas fa-clock"></i> <?= $recipe['prep_time'] + $recipe['cook_time'] ?> min</span>
-                                        <span><i class="fas fa-fire"></i> <?= $recipe['calories'] ?> kcal</span>
-                                        <span><i class="fas fa-signal"></i> <?= sanitize($recipe['difficulty']) ?></span>
-                                    </div>
-                                    <?php if (!empty($tags)): ?>
-                                        <div class="recipe-tags">
-                                            <?php foreach (array_slice($tags, 0, 3) as $tag): ?>
-                                                <span class="tag"><?= sanitize($tag) ?></span>
-                                            <?php endforeach; ?>
-                                        </div>
+                                    <?php if (isLoggedIn()):
+                                        $isFav = in_array($recipe['id'], $myFavIds);
+                                    ?>
+                                        <button class="fav-toggle-btn <?= $isFav ? 'active' : '' ?>" data-id="<?= $recipe['id'] ?>" aria-label="Guardar receta" style="position:absolute; top:12px; right:12px; width:36px; height:36px; border-radius:50%; background:<?= $isFav ? 'rgba(239, 68, 68, 0.15)' : 'rgba(11, 15, 25, 0.6)' ?>; backdrop-filter:blur(8px); border:1px solid <?= $isFav ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.1)' ?>; color:<?= $isFav ? '#ef4444' : '#fff' ?>; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index:10; outline:none; box-shadow:<?= $isFav ? '0 0 10px rgba(239, 68, 68, 0.25)' : 'none' ?>;">
+                                            <i class="<?= $isFav ? 'fas' : 'far' ?> fa-heart"></i>
+                                        </button>
                                     <?php endif; ?>
                                 </div>
-                            </a>
+                                <a href="detail.php?id=<?= $recipe['id'] ?>" style="text-decoration:none; color:inherit; display:block;">
+                                    <div class="recipe-card-body">
+                                        <h3><?= sanitize($recipe['title']) ?></h3>
+                                        <p><?= sanitize($recipe['description']) ?></p>
+                                        <div class="recipe-meta">
+                                            <span><i class="fas fa-clock"></i> <?= $recipe['prep_time'] + $recipe['cook_time'] ?> min</span>
+                                            <span><i class="fas fa-fire"></i> <?= $recipe['calories'] ?> kcal</span>
+                                            <span><i class="fas fa-signal"></i> <?= sanitize($recipe['difficulty']) ?></span>
+                                        </div>
+                                        <?php if (!empty($tags)): ?>
+                                            <div class="recipe-tags">
+                                                <?php foreach (array_slice($tags, 0, 3) as $tag): ?>
+                                                    <span class="tag"><?= sanitize($tag) ?></span>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </a>
+                            </div>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
@@ -110,5 +127,57 @@ include __DIR__ . '/../includes/header.php';
         </div>
     </div>
 </div>
+
+<script>
+document.querySelectorAll('.fav-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const recipeId = btn.dataset.id;
+        const fd = new FormData();
+        fd.append('recipe_id', recipeId);
+        
+        btn.disabled = true;
+        btn.style.transform = 'scale(0.8)';
+        
+        try {
+            const res = await fetch('<?= baseUrl() ?>/api/favorite.php', {
+                method: 'POST',
+                body: fd
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.favorited) {
+                    btn.classList.add('active');
+                    btn.style.color = '#ef4444';
+                    btn.style.background = 'rgba(239, 68, 68, 0.15)';
+                    btn.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    btn.style.boxShadow = '0 0 10px rgba(239, 68, 68, 0.25)';
+                    btn.innerHTML = '<i class="fas fa-heart"></i>';
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.color = '#fff';
+                    btn.style.background = 'rgba(11, 15, 25, 0.6)';
+                    btn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    btn.style.boxShadow = 'none';
+                    btn.innerHTML = '<i class="far fa-heart"></i>';
+                }
+                btn.style.transform = 'scale(1.25)';
+                setTimeout(() => {
+                    btn.style.transform = 'scale(1)';
+                    btn.disabled = false;
+                }, 200);
+            } else {
+                btn.disabled = false;
+                btn.style.transform = 'scale(1)';
+            }
+        } catch (err) {
+            console.error(err);
+            btn.disabled = false;
+            btn.style.transform = 'scale(1)';
+        }
+    });
+});
+</script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

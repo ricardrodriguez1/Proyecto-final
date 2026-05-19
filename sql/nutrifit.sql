@@ -68,6 +68,33 @@ CREATE INDEX idx_recipes_diet_type ON recipes(diet_type);
 CREATE INDEX idx_recipes_calories ON recipes(calories);
 CREATE INDEX idx_recipe_tags_tag ON recipe_tags(tag);
 
+CREATE TABLE user_plans (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    peso DECIMAL(5,1) NOT NULL,
+    altura DECIMAL(5,1) NOT NULL,
+    edad INT NOT NULL,
+    genero VARCHAR(10) NOT NULL,
+    actividad VARCHAR(50) NOT NULL,
+    objetivo VARCHAR(50) NOT NULL,
+    diet_type VARCHAR(50) NOT NULL,
+    target_calories INT NOT NULL,
+    protein INT NOT NULL,
+    carbs INT NOT NULL,
+    fat INT NOT NULL,
+    plan_type ENUM('completo', 'receta') NOT NULL,
+    breakfast_id INT DEFAULT NULL,
+    lunch_id INT DEFAULT NULL,
+    dinner_id INT DEFAULT NULL,
+    snack_id INT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (breakfast_id) REFERENCES recipes(id) ON DELETE SET NULL,
+    FOREIGN KEY (lunch_id) REFERENCES recipes(id) ON DELETE SET NULL,
+    FOREIGN KEY (dinner_id) REFERENCES recipes(id) ON DELETE SET NULL,
+    FOREIGN KEY (snack_id) REFERENCES recipes(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 -- ============================================
 -- SEED USERS (passwords: admin123 / user123)
 -- ============================================
